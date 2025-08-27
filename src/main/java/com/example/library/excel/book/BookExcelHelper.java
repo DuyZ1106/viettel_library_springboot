@@ -1,6 +1,7 @@
 package com.example.library.excel.book;
 
 import com.example.library.entity.Book;
+import com.example.library.entity.User;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
@@ -8,9 +9,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BookExcelHelper {
@@ -33,7 +33,11 @@ public class BookExcelHelper {
 
                 book.setCode(getCellString(row.getCell(0)));
                 book.setTitle(getCellString(row.getCell(1)));
-                book.setAuthors(getCellString(row.getCell(2)));
+
+                String authorsCell = getCellString(row.getCell(2));
+                Set<User> authors = parseAuthorIds(authorsCell);
+                book.setAuthors(authors);
+
                 book.setPublisher(getCellString(row.getCell(3)));
                 book.setPageCount(getCellInteger(row.getCell(4)));
                 book.setLanguage(getCellString(row.getCell(5)));
@@ -72,7 +76,17 @@ public class BookExcelHelper {
 
                 row.createCell(0).setCellValue(book.getCode());
                 row.createCell(1).setCellValue(book.getTitle());
-                row.createCell(2).setCellValue(book.getAuthors());
+
+                String authorsStr = "";
+                if (book.getAuthors() != null && !book.getAuthors().isEmpty()) {
+                    authorsStr = book.getAuthors()
+                            .stream()
+                            .map(u -> u.getId() != null ? u.getId().toString() : "")
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.joining(","));
+                }
+                row.createCell(2).setCellValue(authorsStr);
+
                 row.createCell(3).setCellValue(book.getPublisher());
                 row.createCell(4).setCellValue(book.getPageCount() != null ? book.getPageCount() : 0);
                 row.createCell(5).setCellValue(book.getLanguage());
@@ -107,5 +121,28 @@ public class BookExcelHelper {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static Set<User> parseAuthorIds(String cellValue) {
+        // Hỗ trợ cả dấu phẩy hoặc chấm phẩy: "1,2,3" hoặc "1; 2; 3"
+        if (cellValue == null || cellValue.isBlank()) return new LinkedHashSet<>();
+
+        String normalized = cellValue.replace(";", ",");
+        String[] parts = normalized.split(",");
+
+        Set<User> users = new LinkedHashSet<>();
+        for (String raw : parts) {
+            String s = raw.trim();
+            if (s.isEmpty()) continue;
+            try {
+                Long id = Long.parseLong(s);
+                User u = new User();
+                u.setId(id);       // stub entity theo id — Hibernate sẽ link khi save
+                users.add(u);
+            } catch (NumberFormatException ignore) {
+                // bỏ qua ô không hợp lệ (ví dụ chữ)
+            }
+        }
+        return users;
     }
 }

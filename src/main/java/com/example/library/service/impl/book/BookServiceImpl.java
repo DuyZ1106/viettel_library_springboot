@@ -6,9 +6,11 @@ import com.example.library.dto.book.request.UpdateBookRequest;
 import com.example.library.dto.book.response.BookResponse;
 import com.example.library.entity.Book;
 import com.example.library.entity.Category;
+import com.example.library.entity.User;
 import com.example.library.exception.BusinessException;
 import com.example.library.mapper.book.BookMapper;
 import com.example.library.repository.BookRepository;
+import com.example.library.repository.UserRepository;
 import com.example.library.service.book.BookService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,9 @@ import org.springframework.stereotype.Service;
 
 import jakarta.persistence.criteria.Join;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.springframework.util.StringUtils.hasText;
 
 @Service
@@ -26,6 +31,7 @@ import static org.springframework.util.StringUtils.hasText;
 public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
+    private final UserRepository userRepository;
     private final BookMapper bookMapper;
 
     @Override
@@ -34,6 +40,12 @@ public class BookServiceImpl implements BookService {
             throw new BusinessException("error.book.code.exists");
         }
         Book book = bookMapper.toEntity(request);
+
+        Set<User> authors = new HashSet<>(userRepository.findAllById(request.getAuthorIds()));
+        if (authors.size() != request.getAuthorIds().size()) {
+            throw new BusinessException("error.author.not_found");
+        }
+
         book.setIsDeleted(false);
         book.setIsActive(true);
         return bookMapper.toResponse(bookRepository.save(book));
@@ -46,6 +58,14 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new BusinessException("error.book.not_found"));
 
         bookMapper.updateEntity(book, request);
+
+        if (request.getAuthorIds() != null) {
+            Set<User> authors = new HashSet<>(userRepository.findAllById(request.getAuthorIds()));
+            if (authors.size() != request.getAuthorIds().size()) {
+                throw new BusinessException("error.author.not_found");
+            }
+            book.setAuthors(authors);
+        }
         return bookMapper.toResponse(bookRepository.save(book));
     }
 
@@ -85,8 +105,11 @@ public class BookServiceImpl implements BookService {
         }
 
         if (hasText(request.getAuthors())) {
-            spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("authors")), "%" + request.getAuthors().toLowerCase() + "%"));
+            spec = spec.and((root, query, cb) -> {
+                Join<Book, User> authorJoin = root.join("authors");
+                query.distinct(true);
+                return cb.like(cb.lower(authorJoin.get("fullName")), "%" + request.getAuthors().toLowerCase() + "%");
+            });
         }
 
         if (hasText(request.getPublisher())) {

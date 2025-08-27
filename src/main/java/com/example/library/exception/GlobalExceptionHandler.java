@@ -1,6 +1,7 @@
 package com.example.library.exception;
 
 import com.example.library.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
  * - AuthenticationException ➜ 401
  * - Các lỗi khác            ➜ 500
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

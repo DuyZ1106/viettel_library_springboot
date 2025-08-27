@@ -104,7 +104,7 @@ public class CommentServiceImpl implements CommentService {
         if (maxDepth != null) {
             comments = comments.stream()
                     .filter(c -> c.getLevel() != null && c.getLevel() <= maxDepth)
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         Map<Long, CommentResponse> map = new LinkedHashMap<>();

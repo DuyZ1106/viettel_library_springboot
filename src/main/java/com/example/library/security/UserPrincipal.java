@@ -23,7 +23,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Tạm thời chưa gắn role; sẽ bổ sung sau khi có module RoleGroup
         return Collections.emptyList();
     }
 

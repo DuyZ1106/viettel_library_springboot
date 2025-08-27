@@ -13,7 +13,6 @@ public class JpaAuditorConfig {
 
     @Bean
     public AuditorAware<String> auditorAware() {
-        // TODO: sau này lấy username từ JWT
         return () -> Optional.of("system");
     }
 }

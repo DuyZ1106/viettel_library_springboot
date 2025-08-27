@@ -3,7 +3,6 @@ package com.example.library.entity;
 import com.example.library.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.Set;
 
 @Entity
@@ -25,8 +24,6 @@ public class Book extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
-    private String authors;
-
     private String publisher;
 
     private Integer pageCount;
@@ -47,4 +44,14 @@ public class Book extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     private Set<Category> categories;
+
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "book_authors",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> authors;
+
 }
